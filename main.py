@@ -71,6 +71,19 @@ class LLavaArguments(
             "load_8bit",
             "load_4bit",
         ],
+        defaults=[
+            "Lin-Chen/ShareGPT4V-7B",
+            None,
+            "cuda",
+            None,
+            torch.bfloat16,
+            None,
+            None,
+            None,
+            None,
+            False,
+            False,
+        ],
     )
 ):
     """
