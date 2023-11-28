@@ -763,12 +763,12 @@ def gradio_run(port):
         image = gr.Image(shape=(512, 512), label="Image", source="upload")
         image_textbox = gr.Textbox(lines=1, label="Image URL", value="https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207",
                                    placeholder="URL to image or Base64 string which can replace the uploaded image if not specified")
-        num_samples = gr.Number(default=5, label="Number of samples")
-        temperature = gr.Slider(minimum=0.0, maximum=1.0, default=0.2, label="Temperature")
-        top_p = gr.Slider(minimum=0.0, maximum=1.0, default=0.95, label="Top p")
-        max_new_tokens = gr.Number(default=256, label="Max new tokens")
-        use_cache = gr.Checkbox(default=True, label="Use cache")
-        do_sample = gr.Checkbox(default=True, label="Do sample")
+        num_samples = gr.Number(value=5, label="Number of samples")
+        temperature = gr.Slider(minimum=0.0, maximum=1.0, value=0.2, label="Temperature")
+        top_p = gr.Slider(minimum=0.0, maximum=1.0, value=0.95, label="Top p")
+        max_new_tokens = gr.Number(value=256, label="Max new tokens")
+        use_cache = gr.Checkbox(value=True, label="Use cache")
+        do_sample = gr.Checkbox(value=True, label="Do sample")
         submit_btn = gr.Button(label="Submit")
         
         result_text = gr.Textbox(lines=5, label="Results")
@@ -810,6 +810,7 @@ def gradio_run(port):
                 max_new_tokens,
                 use_cache,
                 do_sample,
+                image_textbox
             ],
             outputs=[result_text],
         )
