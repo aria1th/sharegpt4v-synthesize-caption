@@ -167,6 +167,12 @@ class LLavaArguments(
             action="store_true",
             help="load 4bit model",
         )
+        parser.add_argument(
+            "--prompt-format",
+            type=str,
+            default=None,
+            help="prompt format to use for inference",
+        )
         return parser
 
     @staticmethod
@@ -567,6 +573,7 @@ def test_inference():
         LOADED_STATE["conv"],
     )
     print(result)
+
 
 def main():
     """
