@@ -352,13 +352,17 @@ def handle_temp_image(image_path_or_str: str) -> str:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Image download failed with status code {image_file.status_code}",
             )
-        image_file = image_file.content
+        image_file_content = image_file.content
+        # get the image extension from header
+        file_extension = image_file.headers["Content-Type"].split("/")[-1]
         # save the image to temporary directory
-        with NamedTemporaryFile(dir=TEMP_IMAGE_DIR.name, delete=False) as f:
-            f.write(image_file)
-            image_file = f.name
-        TEMP_IMAGE_CACHE[image_path_or_str] = image_file
-        return image_file
+        with NamedTemporaryFile(
+            dir=TEMP_IMAGE_DIR.name, delete=False, suffix=f".{file_extension}"
+        ) as f:
+            f.write(image_file_content)
+            image_file_path = f.name
+        TEMP_IMAGE_CACHE[image_path_or_str] = image_file_path
+        return image_file_path
     else:
         return image_path_or_str
 
