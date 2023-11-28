@@ -140,7 +140,7 @@ class LLavaArguments(
         parser.add_argument(
             "--dtype",
             type=str,
-            default=torch.bfloat16,
+            default="bfloat16",
             help="dtype to use for inference",
         )
         parser.add_argument(
@@ -186,6 +186,25 @@ class LLavaArguments(
         """
         args = parser.parse_args()
         kwargs_to_accept = set(LLavaArguments._fields)
+        # parse dtype from string
+        if args.dtype:
+            # bf16 / bfloat16
+            if args.dtype.lower() in ["bf16", "bfloat16"]:
+                args.dtype = torch.bfloat16
+            # fp32 / float32
+            elif args.dtype.lower() in ["fp32", "float32", "float"]:
+                args.dtype = torch.float32
+            # fp16 / float16
+            elif args.dtype.lower() in ["fp16", "float16", "half"]:
+                args.dtype = torch.float16
+            elif args.dtype.lower() in ["int8", "int"]:
+                args.dtype = torch.int8
+            elif args.dtype.lower() in ["int16", "short"]:
+                args.dtype = torch.int16
+            elif args.dtype.lower() in ["int32", "long"]:
+                args.dtype = torch.int32
+            else:
+                raise ValueError(f"Unknown dtype {args.dtype}")
         return LLavaArguments(
             **{k: v for k, v in vars(args).items() if k in kwargs_to_accept}
         )
@@ -505,6 +524,8 @@ def load_llava(args: LLavaArguments):
         args.load_4bit,
         device=args.device,
     )
+    MODEL_CONFIG["device"] = args.device
+    MODEL_CONFIG["dtype"] = args.dtype
     register_preprocessor(image_processor, model.config)
 
     if args.load_8bit or args.load_4bit:
