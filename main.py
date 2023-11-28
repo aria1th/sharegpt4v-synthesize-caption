@@ -771,7 +771,7 @@ def gradio_run(port):
     with gr.Blocks() as interface:
         prompt_text = gr.Textbox(lines=len(PROMPT_DEFAULT.split('\n')), label="Prompt template", value=PROMPT_DEFAULT)
         tag_text = gr.Textbox(lines=1, label="Tags", value="1girl, white hair, short hair, lightblue eyes, flowers, light, sitting")
-        image = gr.Image(shape=(512, 512), label="Image", source="upload")
+        image = gr.Image(shape=(512, 512), label="Image", source="upload", type="numpy")
         image_textbox = gr.Textbox(lines=1, label="Image URL", value="https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207",
                                    placeholder="URL to image or Base64 string which can replace the uploaded image if not specified")
         num_samples = gr.Number(value=5, label="Number of samples")
@@ -797,7 +797,7 @@ def gradio_run(port):
                 },
                 delimeter=". ",
                 text_or_path=tag_text,  # tags
-                image_or_path=image or image_text,  # image
+                image_or_path=image if image is not None else image_text,  # image
                 prompt_format=prompt_text,
             )
             outputs = inference(
