@@ -216,11 +216,12 @@ class ServerArguments(dict):
     Handles server arguments for this session.
     """
 
-    kwargs_to_handle = ["port", "api_auth_file", "api_auth_pair", "launch_option"]
+    kwargs_to_handle = ["port", "api_auth_file", "api_auth_pair", "launch_option", "test-inference"]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
     api_auth_pair: Optional[str] = "master:password"  # username:password
-    launch_option: Optional[str] = "uvicorn"  # uvicorn, gradio(share)
+    launch_option: Optional[str] = "gradio"  # uvicorn, gradio(share)
+    test_inference: bool = False # test inference
 
     def __init__(self, **kwargs):
         """
@@ -262,6 +263,11 @@ class ServerArguments(dict):
             type=str,
             default="uvicorn",
             help="launch option, can be uvicorn or gradio(to open gradio interface into public))",
+        )
+        parser.add_argument(
+            "--test-inference",
+            action="store_true",
+            help="Test inference"
         )
 
     @staticmethod
@@ -717,7 +723,8 @@ def main():
     LOADED_STATE["tokenizer"] = tokenizer
     LOADED_STATE["conv"] = conv
     print(f"Server running on port {server_args.port}")
-    test_inference()
+    if server_args.test_inference:
+        test_inference()
     # run the server
     # run gradio frontend with share option if specified
     if server_args.launch_option == "gradio":
