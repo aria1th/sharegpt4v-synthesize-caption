@@ -344,6 +344,7 @@ def handle_temp_image(image_path_or_str: str) -> str:
     if image_path_or_str in TEMP_IMAGE_CACHE:
         return TEMP_IMAGE_CACHE[image_path_or_str]
     if image_path_or_str.startswith("http"):
+        print(f"Downloading image from {image_path_or_str}")
         # download the image
         image_file = requests.get(image_path_or_str)
         # check response
