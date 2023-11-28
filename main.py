@@ -220,13 +220,14 @@ class ServerArguments(dict):
         "api_auth_file",
         "api_auth_pair",
         "launch_option",
-        "test-inference",
+        "test_inference",
     ]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
     api_auth_pair: Optional[str] = "master:password"  # username:password
     launch_option: Optional[str] = "gradio"  # uvicorn, gradio(share)
     test_inference: bool = False  # test inference
+    test_api: bool = False  # test api, exclusive with test_inference
 
     def __init__(self, **kwargs):
         """
@@ -271,6 +272,9 @@ class ServerArguments(dict):
         )
         parser.add_argument(
             "--test-inference", action="store_true", help="Test inference"
+        )
+        parser.add_argument(
+            "--test-api", action="store_true", help="Test api, exclusive with test-inference"
         )
 
     @staticmethod
@@ -677,7 +681,13 @@ def bind_inference_api(app:FastAPI):
             args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
         )
         return InferenceArgumentsOutput(samples_texts=outputs)
-
+    app.add_api_route(
+        "/inference",
+        endpoint=wrap_inference,
+        methods=["POST"],
+        response_model=InferenceArgumentsOutput,
+        dependencies=[Depends(auth)],
+    )
 
 def test_inference():
     """
@@ -705,6 +715,28 @@ def test_inference():
     )
     print(result)
 
+def test_api(port:int, auth_pair:str):
+    """
+    Test inference with api.
+    """
+    endpoint = f"http://localhost:{port}/inference"
+    test_args = InferenceArgumentsInput(
+        num_samples=5,
+        inference_kwargs={
+            "temperature": 0.2,
+            "top_p": 0.95,
+            "max_new_tokens": 256,
+            "use_cache": True,
+            "do_sample": True,  # this should be True if temperature > 0, non-deterministic
+        },
+        delimeter=". ",
+        text_or_path="1girl, white hair, short hair, lightblue eyes, flowers, light, sitting",  # tags
+        image_or_path="https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207"
+    )
+    session = requests.Session()
+    session.auth = tuple(auth_pair.split(":"))
+    result = session.post(endpoint, json=test_args.dict())
+    assert result.status_code == 200, f"Test failed with status code {result.status_code}"
 
 def gradio_run(port):
     """
@@ -745,7 +777,9 @@ def main():
     LOADED_STATE["tokenizer"] = tokenizer
     LOADED_STATE["conv"] = conv
     print(f"Server running on port {server_args.port}")
-    if server_args.test_inference:
+    if server_args.test_api:
+        test_api(server_args.port, server_args.api_auth_pair)
+    if not server_args.test_api and server_args.test_inference:
         test_inference()
     # run the server
     # run gradio frontend with share option if specified
