@@ -37,8 +37,6 @@ from llava.mm_utils import (
     KeywordsStoppingCriteria,
 )
 
-app = None
-
 from transformers import TextStreamer
 
 PREPROCESSOR = {}
@@ -777,6 +775,7 @@ def gradio_run(port):
             "docs_url": "/docs",
             "redoc_url": "/redoc",
         },
+        prevent_thread_lock=True,
     )
     return gradio_app, local_url
 
