@@ -14,7 +14,7 @@ from llava.utils import disable_torch_init
 
 # set up server with uvicorn
 import uvicorn
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, APIRouter
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 
@@ -671,6 +671,7 @@ def bind_inference_api(app: FastAPI):
     """
     Binds inference api.
     """
+    router = ApiRouter()
 
     @app.post(
         "/inference",
@@ -687,7 +688,7 @@ def bind_inference_api(app: FastAPI):
             args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
         )
         return InferenceArgumentsOutput(samples_texts=outputs)
-
+    app.include_router(router)
     app.add_api_route(
         "/inference",
         endpoint=wrap_inference,
@@ -724,13 +725,16 @@ def test_inference():
     print(result)
 
 
-def test_api(port: int, auth_pair: str):
+def test_api(url_base: str, port: int, auth_pair: str):
     """
     Test inference with api.
     """
     import time
+
     time.sleep(5)
-    endpoint = f"http://localhost:{port}/inference"
+    if url_base.endswith("/"):
+        url_base = url_base[:-1]
+    endpoint = f"{url_base}:{port}/inference"
     test_args = InferenceArgumentsInput(
         num_samples=5,
         inference_kwargs={
@@ -751,6 +755,7 @@ def test_api(port: int, auth_pair: str):
         print(f"Test api failed with status code {result.status_code}, {result.text}")
     else:
         print("Test api passed")
+
 
 def gradio_run(port):
     """
@@ -773,7 +778,7 @@ def gradio_run(port):
             "redoc_url": "/redoc",
         },
     )
-    return gradio_app
+    return gradio_app, local_url
 
 
 def main():
@@ -797,14 +802,18 @@ def main():
     # run the server
     # run gradio frontend with share option if specified
     if server_args.launch_option == "gradio":
-        app = gradio_run(server_args.port)
+        app, local_url = gradio_run(server_args.port)
     else:
-        app = FastAPI()
+        app, local_url = FastAPI(), "http://127.0.0.1"
     bind_inference_api(app)
     if server_args.test_api:
         import threading
+
         # run test api in another thread
-        threading.Thread(target=test_api, args=(server_args.port, server_args.api_auth_pair)).start()
+        threading.Thread(
+            target=test_api,
+            args=(local_url, server_args.port, server_args.api_auth_pair),
+        ).start()
     uvicorn.run(app, port=server_args.port)
 
 
