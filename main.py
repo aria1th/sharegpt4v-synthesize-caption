@@ -680,9 +680,8 @@ def bind_inference_api(app: FastAPI):
         """
         # check if model is loaded
         assert LOADED_STATE["model"] is not None, "Model is not loaded"
-        # if prompt format is not specified, use default
-        if not args.prompt_format:
-            args.prompt_format = PROMPT_DEFAULT
+        # convert to InferenceArguments
+        args = InferenceArguments(**args.dict())
         outputs = inference(
             args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
         )
