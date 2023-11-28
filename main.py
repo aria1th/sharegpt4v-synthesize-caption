@@ -184,8 +184,8 @@ class LLavaArguments(
         if args.prompt_format and os.path.isfile(args.prompt_format):
             with open(args.prompt_format, "r", encoding="utf-8") as f:
                 args.prompt_format = f.read()
-        return LLavaArguments(**vars(args))
-
+        kwargs_to_accept = set(LLavaArguments._fields)
+        return LLavaArguments(**{k: v for k, v in vars(args).items() if k in kwargs_to_accept})
 
 class ServerArguments(dict):
     """
