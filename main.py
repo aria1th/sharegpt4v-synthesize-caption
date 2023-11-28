@@ -313,7 +313,7 @@ class InferenceArguments(dict):
         @param delimeter: delimeter for the prompt
         @param text_or_path: text or path to the text
         @param image_or_path: image or path to the image
-
+        @param prompt_format: prompt format
     """
 
     kwargs_to_handle = [
@@ -714,7 +714,7 @@ def test_inference():
     print(result)
 
 
-def test_api(url_base: str, port: int, auth_pair: str):
+def test_api(url_base: str, auth_pair: str):
     """
     Test inference with api.
     """
@@ -723,7 +723,7 @@ def test_api(url_base: str, port: int, auth_pair: str):
     time.sleep(5)
     if url_base.endswith("/"):
         url_base = url_base[:-1]
-    endpoint = f"{url_base}:{port}/inference"
+    endpoint = f"{url_base}/inference"
     test_args = InferenceArgumentsInput(
         num_samples=5,
         inference_kwargs={
@@ -755,10 +755,64 @@ def gradio_run(port):
     except ImportError:
         # gradio not installed
         print("Gradio not installed, skipping gradio interface")
-        return FastAPI()
+        return FastAPI(), f"http://127.0.0.1:{port}"
     # simple title
     with gr.Blocks() as interface:
-        gr.Markdown("## LLaVA")
+        prompt_text = gr.Textbox(lines=len(PROMPT_DEFAULT.split('\n')), label="Prompt template", value=PROMPT_DEFAULT)
+        tag_text = gr.Textbox(lines=1, label="Tags", value="1girl, white hair, short hair, lightblue eyes, flowers, light, sitting")
+        image = gr.Image(shape=(512, 512), label="Image", source="upload")
+        image_textbox = gr.Textbox(lines=1, label="Image URL", value="https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207",
+                                   placeholder="URL to image or Base64 string which can replace the uploaded image if not specified")
+        num_samples = gr.Number(default=5, label="Number of samples")
+        temperature = gr.Slider(minimum=0.0, maximum=1.0, default=0.2, label="Temperature")
+        top_p = gr.Slider(minimum=0.0, maximum=1.0, default=0.95, label="Top p")
+        max_new_tokens = gr.Number(default=256, label="Max new tokens")
+        use_cache = gr.Checkbox(default=True, label="Use cache")
+        do_sample = gr.Checkbox(default=True, label="Do sample")
+        submit_btn = gr.Button(label="Submit")
+        
+        result_text = gr.Textbox(lines=5, label="Results")
+        
+        def submit(prompt_text, tag_text, image, num_samples, temperature, top_p, max_new_tokens, use_cache, do_sample, image_text):
+            # convert to InferenceArguments
+            args = InferenceArguments(
+                num_samples=num_samples,
+                inference_kwargs={
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "max_new_tokens": max_new_tokens,
+                    "use_cache": use_cache,
+                    "do_sample": do_sample,  # this should be True if temperature > 0, non-deterministic
+                },
+                delimeter=". ",
+                text_or_path=tag_text,  # tags
+                image_or_path=image or image_text,  # image
+                prompt_format=prompt_text,
+            )
+            outputs = inference(
+                args,
+                LOADED_STATE["model"],
+                LOADED_STATE["tokenizer"],
+                LOADED_STATE["conv"],
+            )
+            result_text_value = "\n".join(outputs)
+            return result_text_value
+        
+        submit_btn.click(
+            fn=submit,
+            inputs=[
+                prompt_text,
+                tag_text,
+                image,
+                num_samples,
+                temperature,
+                top_p,
+                max_new_tokens,
+                use_cache,
+                do_sample,
+            ],
+            outputs=[result_text],
+        )
     gradio_app, local_url, share_url = interface.launch(
         share=True,
         server_port=port,
@@ -802,7 +856,7 @@ def main():
         # run test api in another thread
         threading.Thread(
             target=test_api,
-            args=(local_url, server_args.port, server_args.api_auth_pair),
+            args=(local_url, server_args.api_auth_pair),
         ).start()
     if server_args.launch_option == "uvicorn":
         uvicorn.run(app, port=server_args.port)
