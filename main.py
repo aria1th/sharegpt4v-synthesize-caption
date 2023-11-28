@@ -4,7 +4,7 @@ import base64
 import argparse
 import json
 import requests
-from tempfile import TemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from secrets import compare_digest
 from typing import List, Optional, Type, Dict, Any
 from tqdm import tqdm
@@ -44,7 +44,7 @@ MODEL_CONFIG = {}  # device, dtype
 LOADED_STATE = {}  # model, tokenizer, image_processor, context_len, roles, conv
 TEMP_IMAGE_DIR = TemporaryDirectory()  # temporary directory for images
 TEMP_IMAGE_CACHE = {}  # temporary image cache
-
+TEMP_IMAGES = []  # temporary images
 
 def cast_to_device(tensor):
     """
@@ -486,16 +486,16 @@ def handle_temp_image(image_path_or_str: str) -> str:
         # get the image extension from header
         file_extension = image_file.headers["Content-Type"].split("/")[-1]
         # save the image to temporary directory
-        with TemporaryFile(
-            dir=TEMP_IMAGE_DIR.name, suffix=f".{file_extension}"
-        ) as f:
-            f.write(image_file_content)
-            image_file_path = f.name
+        f = NamedTemporaryFile(
+            dir=TEMP_IMAGE_DIR.name, suffix=f".{file_extension}", delete=False
+        )
+        f.write(image_file_content)
+        image_file_path = f.name
         TEMP_IMAGE_CACHE[image_path_or_str] = image_file_path
+        TEMP_IMAGES.append(f)
         return image_file_path
     else:
         return image_path_or_str
-
 
 def load_image(image_path_or_str: str) -> Image.Image:
     """
@@ -531,7 +531,11 @@ def clean_up_temp_image() -> None:
     """
     TEMP_IMAGE_DIR.cleanup()
     TEMP_IMAGE_CACHE.clear()
-
+    for temp_image in TEMP_IMAGES:
+        try:
+            temp_image.close()
+        except Exception as e:
+            print(f"Error while closing temporary image {temp_image}: {e}")
 
 def get_image_tensor(image_str) -> torch.Tensor:
     """
