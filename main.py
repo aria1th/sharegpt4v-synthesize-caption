@@ -487,7 +487,7 @@ def handle_temp_image(image_path_or_str: str) -> str:
         file_extension = image_file.headers["Content-Type"].split("/")[-1]
         # save the image to temporary directory
         with TemporaryFile(
-            dir=TEMP_IMAGE_DIR.name, delete=False, suffix=f".{file_extension}"
+            dir=TEMP_IMAGE_DIR.name, suffix=f".{file_extension}"
         ) as f:
             f.write(image_file_content)
             image_file_path = f.name
