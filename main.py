@@ -87,6 +87,18 @@ class LLavaArguments(
     conv_mode: Optional[str] = None
     load_8bit: bool = False
     load_4bit: bool = False
+    
+    def __init__(self, **kwargs):
+        """
+        Initialize the LLaVA arguments.
+        """
+        # filter out kwargs that are not in the class
+        super().__init__(
+            **{k: v for k, v in kwargs.items() if k in self._fields}
+        )
+        # setattr for fields
+        for k, v in self._asdict().items():
+            setattr(self, k, v)
 
     @staticmethod
     def configure_argparser() -> argparse.ArgumentParser:
@@ -182,6 +194,18 @@ class ServerArguments(dict):
     api_auth_file: Optional[str] = "api_auth.json"
     api_auth_pair: Optional[str] = "master:password"  # username:password
 
+    def __init__(self, **kwargs):
+        """
+        Initialize the server arguments.
+        """
+        # filter out kwargs that are not in the class
+        super().__init__(
+            **{k: v for k, v in kwargs.items() if k in ServerArguments.kwargs_to_handle}
+        )
+        # setattr for fields
+        for k, v in self.items():
+            setattr(self, k, v)
+
     @staticmethod
     def attach_arguments(parser: argparse.ArgumentParser) -> None:
         """
@@ -221,6 +245,17 @@ class ServerArguments(dict):
             auth_pairs[username] = password
         return auth_pairs
 
+    @staticmethod
+    def parse_arguments(parser: argparse.ArgumentParser) -> "ServerArguments":
+        """
+        Parse the arguments for the server.
+        """
+        args = parser.parse_args()
+        kwargs_to_accept = set(ServerArguments.kwargs_to_handle)
+        return ServerArguments(
+            **{k: v for k, v in vars(args).items() if k in kwargs_to_accept}
+        )
+
 
 class InferenceArguments(dict):
     """
@@ -233,6 +268,14 @@ class InferenceArguments(dict):
 
     """
 
+    kwargs_to_handle = [
+        "num_samples",
+        "inference_kwargs",
+        "delimeter",
+        "text_or_path",
+        "image_or_path",
+        "prompt_format",
+    ]
     num_samples = 5
     inference_kwargs = {
         "temperature": 0.2,
@@ -245,6 +288,22 @@ class InferenceArguments(dict):
     text_or_path = ""
     image_or_path = ""
     prompt_format = ""
+
+    def __init__(self, **kwargs):
+        """
+        Initialize the inference arguments.
+        """
+        # filter out kwargs that are not in the class
+        super().__init__(
+            **{
+                k: v
+                for k, v in kwargs.items()
+                if k in InferenceArguments.kwargs_to_handle
+            }
+        )
+        # setattr for fields
+        for k, v in self.items():
+            setattr(self, k, v)
 
     def get_prompt_format(self):
         """
@@ -584,15 +643,16 @@ def main():
     # attach server arguments
     ServerArguments.attach_arguments(parser)
     args = LLavaArguments.parse_arguments(parser)
+    server_args = ServerArguments.parse_arguments(parser)
     if args.cuda_devices:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_devices
     model, tokenizer, _, _, _, conv = load_llava(args)
     LOADED_STATE["model"] = model
     LOADED_STATE["tokenizer"] = tokenizer
     LOADED_STATE["conv"] = conv
-    print(f"Server running on port {ServerArguments.port}")
+    print(f"Server running on port {server_args.port}")
     test_inference()
-    uvicorn.run(app, port=ServerArguments.port)
+    uvicorn.run(app, port=server_args.port)
 
 
 if __name__ == "__main__":
