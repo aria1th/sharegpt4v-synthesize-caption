@@ -62,6 +62,7 @@ class LLavaArguments(
             "model_path",
             "model_base",
             "device",
+            "cuda_devices",
             "dtype",
             "model",
             "image_processor",
@@ -92,13 +93,10 @@ class LLavaArguments(
         """
         Initialize the LLaVA arguments.
         """
-        # filter out kwargs that are not in the class
-        super().__init__(
-            **{k: v for k, v in kwargs.items() if k in self._fields}
-        )
-        # setattr for fields
-        for k, v in self._asdict().items():
-            setattr(self, k, v)
+        # setattr for fields, filtered by namedtuple._fields
+        for k, v in kwargs.items():
+            if k in self._fields:
+                setattr(self, k, v)
 
     @staticmethod
     def configure_argparser() -> argparse.ArgumentParser:
