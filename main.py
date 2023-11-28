@@ -221,7 +221,7 @@ class ServerArguments(dict):
         "api_auth_pair",
         "launch_option",
         "test_inference",
-        "test_api"
+        "test_api",
     ]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
@@ -275,7 +275,9 @@ class ServerArguments(dict):
             "--test-inference", action="store_true", help="Test inference"
         )
         parser.add_argument(
-            "--test-api", action="store_true", help="Test api, exclusive with test-inference"
+            "--test-api",
+            action="store_true",
+            help="Test api, exclusive with test-inference",
         )
 
     @staticmethod
@@ -665,12 +667,15 @@ def auth(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
     )
 
 
-def bind_inference_api(app:FastAPI):
+def bind_inference_api(app: FastAPI):
     """
     Binds inference api.
     """
+
     @app.post(
-        "/inference", response_model=InferenceArgumentsOutput, dependencies=[Depends(auth)]
+        "/inference",
+        response_model=InferenceArgumentsOutput,
+        dependencies=[Depends(auth)],
     )
     def wrap_inference(args: InferenceArguments) -> InferenceArgumentsOutput:
         """
@@ -682,6 +687,7 @@ def bind_inference_api(app:FastAPI):
             args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
         )
         return InferenceArgumentsOutput(samples_texts=outputs)
+
     app.add_api_route(
         "/inference",
         endpoint=wrap_inference,
@@ -689,6 +695,7 @@ def bind_inference_api(app:FastAPI):
         response_model=InferenceArgumentsOutput,
         dependencies=[Depends(auth)],
     )
+
 
 def test_inference():
     """
@@ -716,10 +723,13 @@ def test_inference():
     )
     print(result)
 
-def test_api(port:int, auth_pair:str):
+
+def test_api(port: int, auth_pair: str):
     """
     Test inference with api.
     """
+    import time
+    time.sleep(5)
     endpoint = f"http://localhost:{port}/inference"
     test_args = InferenceArgumentsInput(
         num_samples=5,
@@ -732,19 +742,22 @@ def test_api(port:int, auth_pair:str):
         },
         delimeter=". ",
         text_or_path="1girl, white hair, short hair, lightblue eyes, flowers, light, sitting",  # tags
-        image_or_path="https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207"
+        image_or_path="https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207",
     )
     session = requests.Session()
     session.auth = tuple(auth_pair.split(":"))
     result = session.post(endpoint, json=test_args.dict())
-    assert result.status_code == 200, f"Test failed with status code {result.status_code}"
+    if result.status_code != 200:
+        print(f"Test api failed with status code {result.status_code}, {result.text}")
+    else:
+        print("Test api passed")
 
 def gradio_run(port):
     """
     Run gradio interface.
     """
     try:
-        import gradio as gr # pylint: disable=import-outside-toplevel
+        import gradio as gr  # pylint: disable=import-outside-toplevel
     except ImportError:
         # gradio not installed
         print("Gradio not installed, skipping gradio interface")
@@ -753,14 +766,15 @@ def gradio_run(port):
     with gr.Blocks() as interface:
         gr.Markdown("## LLaVA")
     gradio_app, local_url, share_url = interface.launch(
-        share=True, server_port=port,
-        app_kwargs=
-            {
-                "docs_url": "/docs",
-                "redoc_url": "/redoc",
-            }
+        share=True,
+        server_port=port,
+        app_kwargs={
+            "docs_url": "/docs",
+            "redoc_url": "/redoc",
+        },
     )
     return gradio_app
+
 
 def main():
     """
@@ -778,8 +792,6 @@ def main():
     LOADED_STATE["tokenizer"] = tokenizer
     LOADED_STATE["conv"] = conv
     print(f"Server running on port {server_args.port}")
-    if server_args.test_api:
-        test_api(server_args.port, server_args.api_auth_pair)
     if not server_args.test_api and server_args.test_inference:
         test_inference()
     # run the server
@@ -789,7 +801,12 @@ def main():
     else:
         app = FastAPI()
     bind_inference_api(app)
+    if server_args.test_api:
+        import threading
+        # run test api in another thread
+        threading.Thread(target=test_api, args=(server_args.port, server_args.api_auth_pair)).start()
     uvicorn.run(app, port=server_args.port)
+
 
 if __name__ == "__main__":
     main()
