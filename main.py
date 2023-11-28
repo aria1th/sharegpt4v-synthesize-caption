@@ -221,6 +221,7 @@ class ServerArguments(dict):
         "api_auth_pair",
         "launch_option",
         "test_inference",
+        "test_api"
     ]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
