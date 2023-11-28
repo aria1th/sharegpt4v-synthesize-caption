@@ -14,6 +14,7 @@ from llava.utils import disable_torch_init
 
 # set up server with uvicorn
 import uvicorn
+import gradio as gr
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
@@ -101,7 +102,7 @@ class LLavaArguments(
     conv_mode: Optional[str] = None
     load_8bit: bool = False
     load_4bit: bool = False
-    
+
     def __init__(self, **kwargs):
         """
         Initialize the LLaVA arguments.
@@ -215,14 +216,11 @@ class ServerArguments(dict):
     Handles server arguments for this session.
     """
 
-    kwargs_to_handle = [
-        "port",
-        "api_auth_file",
-        "api_auth_pair",
-    ]
+    kwargs_to_handle = ["port", "api_auth_file", "api_auth_pair", "launch_option"]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
     api_auth_pair: Optional[str] = "master:password"  # username:password
+    launch_option: Optional[str] = "uvicorn"  # uvicorn, gradio(share)
 
     def __init__(self, **kwargs):
         """
@@ -258,6 +256,12 @@ class ServerArguments(dict):
             type=str,
             default="master:password",
             help="api auth pair",
+        )
+        parser.add_argument(
+            "--launch-option",
+            type=str,
+            default="uvicorn",
+            help="launch option, can be uvicorn or gradio(to open gradio interface into public))",
         )
 
     @staticmethod
@@ -426,6 +430,7 @@ def format_prompt(original_tag: str, prompt_template: str):
     # find {original_tags}, if not found, use order format
     return prompt_template.format(original_tags=original_tag)
 
+
 def handle_text_web(text_or_path: str) -> str:
     """
     Handles download and return of text.
@@ -445,6 +450,7 @@ def handle_text_web(text_or_path: str) -> str:
         return text_file_content.decode("utf-8")
     else:
         return text_or_path
+
 
 def handle_temp_image(image_path_or_str: str) -> str:
     """
@@ -686,6 +692,14 @@ def test_inference():
     )
     print(result)
 
+def gradio_run(port):
+    """
+    Run gradio interface.
+    """
+    # simple title
+    with gr.Blocks() as title:
+        gr.Markdown("LLaVA")
+    title.launch(share=True, server_port=port)
 
 def main():
     """
@@ -704,8 +718,11 @@ def main():
     LOADED_STATE["conv"] = conv
     print(f"Server running on port {server_args.port}")
     test_inference()
+    # run the server
+    # run gradio frontend with share option if specified
+    if server_args.launch_option == "gradio":
+        gradio_run(server_args.port)
     uvicorn.run(app, port=server_args.port)
-
 
 if __name__ == "__main__":
     main()
