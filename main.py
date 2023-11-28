@@ -4,9 +4,10 @@ import base64
 import argparse
 import json
 import requests
+import numpy as np
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from secrets import compare_digest
-from typing import List, Optional, Type, Dict, Any
+from typing import List, Optional, Type, Dict, Any, Union
 from tqdm import tqdm
 from collections import namedtuple
 from PIL import Image
@@ -474,9 +475,9 @@ def handle_temp_image(image_path_or_str: str) -> str:
     """
     Handles download and return of temporary image.
     """
-    if image_path_or_str in TEMP_IMAGE_CACHE:
+    if isinstance(image_path_or_str, str) and image_path_or_str in TEMP_IMAGE_CACHE:
         return TEMP_IMAGE_CACHE[image_path_or_str]
-    if image_path_or_str.startswith("http"):
+    if isinstance(image_path_or_str, str) and image_path_or_str.startswith("http"):
         print(f"Downloading image from {image_path_or_str}")
         # download the image
         image_file = requests.get(image_path_or_str)
@@ -501,7 +502,7 @@ def handle_temp_image(image_path_or_str: str) -> str:
     else:
         return image_path_or_str
 
-def load_image(image_path_or_str: str) -> Image.Image:
+def load_image(image_path_or_str: Union[str, np.ndarray]) -> Image.Image:
     """
     Handles loading the image.
     Image can be one of three type:
@@ -509,13 +510,17 @@ def load_image(image_path_or_str: str) -> Image.Image:
         - base64 encoded image
         - Web Address for raw image
     """
-    image_path_or_str = handle_temp_image(image_path_or_str)
-    if os.path.isfile(image_path_or_str):
-        image_file = image_path_or_str
+    if isinstance(image_path_or_str, str):
+        image_path_or_str = handle_temp_image(image_path_or_str)
+        if os.path.isfile(image_path_or_str):
+            image_file = image_path_or_str
+        else:
+            # base64 encoded image
+            image_file = io.BytesIO(base64.b64decode(image_path_or_str))
+        image = Image.open(image_file)
     else:
-        # base64 encoded image
-        image_file = io.BytesIO(base64.b64decode(image_path_or_str))
-    image = Image.open(image_file)
+        # numpy array
+        image = Image.fromarray(image_path_or_str)
     # handle RGBA images, transparent part should be white
     if image.mode == "RGBA":
         print("RGBA image detected, converting to RGB")
