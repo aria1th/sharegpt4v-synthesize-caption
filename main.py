@@ -534,6 +534,8 @@ def clean_up_temp_image() -> None:
     Clean up the temporary directory.
     """
     TEMP_IMAGE_DIR.cleanup()
+    # reset dir
+    TEMP_IMAGE_DIR.__init__()
     TEMP_IMAGE_CACHE.clear()
     for temp_image in TEMP_IMAGES:
         try:
