@@ -624,8 +624,9 @@ def inference(args: InferenceArguments, model, tokenizer, conv) -> List[str]:
     keywords = [stop_str]
     streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
     outputs_container = []
+    assert args.num_samples > 0, "Number of samples must be greater than 0"
     with torch.inference_mode():
-        for _ in tqdm(range(args.num_samples)):
+        for _ in tqdm(range(int(args.num_samples))):
             eos_end = False
             input_ids = (
                 tokenizer_image_token(
