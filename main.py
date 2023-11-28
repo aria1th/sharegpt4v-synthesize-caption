@@ -422,9 +422,29 @@ def format_prompt(original_tag: str, prompt_template: str):
     """
     Format the prompt.
     """
+    prompt_template = handle_text_web(prompt_template)
     # find {original_tags}, if not found, use order format
     return prompt_template.format(original_tags=original_tag)
 
+def handle_text_web(text_or_path: str) -> str:
+    """
+    Handles download and return of text.
+    """
+    if text_or_path.startswith("http"):
+        print(f"Downloading text from {text_or_path}")
+        # download the text
+        text_file = requests.get(text_or_path)
+        # check response
+        if text_file.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Text download failed with status code {text_file.status_code}",
+            )
+        text_file_content = text_file.content
+        # return the text, we assume it is utf-8 encoded
+        return text_file_content.decode("utf-8")
+    else:
+        return text_or_path
 
 def handle_temp_image(image_path_or_str: str) -> str:
     """
