@@ -669,7 +669,7 @@ def bind_inference_api(app: FastAPI):
     """
     Binds inference api.
     """
-    router = ApiRouter()
+    router = APIRouter()
 
     @app.post(
         "/inference",
@@ -686,6 +686,7 @@ def bind_inference_api(app: FastAPI):
             args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
         )
         return InferenceArgumentsOutput(samples_texts=outputs)
+
     app.include_router(router)
     app.add_api_route(
         "/inference",
