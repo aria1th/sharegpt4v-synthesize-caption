@@ -69,9 +69,6 @@ class LLavaArguments(
             "conv_mode",
             "load_8bit",
             "load_4bit",
-            "num_samples",
-            "inference_kwargs",
-            "prompt_format",
         ],
     )
 ):
@@ -90,16 +87,6 @@ class LLavaArguments(
     conv_mode: Optional[str] = None
     load_8bit: bool = False
     load_4bit: bool = False
-    num_samples: int = 5
-    inference_kwargs: Dict[str, Any] = {
-        "temperature": 0.2,
-        "top_p": 0.95,
-        "max_new_tokens": 256,
-        "use_cache": True,
-        "do_sample": True,  # this should be True if temperature > 0, non-deterministic
-    }
-    # LLaVa format.
-    prompt_format: str = ""
 
     @staticmethod
     def configure_argparser() -> argparse.ArgumentParser:
@@ -167,12 +154,6 @@ class LLavaArguments(
             action="store_true",
             help="load 4bit model",
         )
-        parser.add_argument(
-            "--prompt-format",
-            type=str,
-            default=None,
-            help="prompt format to use for inference",
-        )
         return parser
 
     @staticmethod
@@ -181,11 +162,11 @@ class LLavaArguments(
         Parse the arguments for LLaVA.
         """
         args = parser.parse_args()
-        if args.prompt_format and os.path.isfile(args.prompt_format):
-            with open(args.prompt_format, "r", encoding="utf-8") as f:
-                args.prompt_format = f.read()
         kwargs_to_accept = set(LLavaArguments._fields)
-        return LLavaArguments(**{k: v for k, v in vars(args).items() if k in kwargs_to_accept})
+        return LLavaArguments(
+            **{k: v for k, v in vars(args).items() if k in kwargs_to_accept}
+        )
+
 
 class ServerArguments(dict):
     """
@@ -249,6 +230,7 @@ class InferenceArguments(dict):
         @param delimeter: delimeter for the prompt
         @param text_or_path: text or path to the text
         @param image_or_path: image or path to the image
+
     """
 
     num_samples = 5
@@ -262,6 +244,20 @@ class InferenceArguments(dict):
     delimeter = ". "
     text_or_path = ""
     image_or_path = ""
+    prompt_format = ""
+
+    def get_prompt_format(self):
+        """
+        Get the prompt format.
+        """
+        if self.prompt_format:
+            # from file or string
+            if os.path.isfile(self.prompt_format):
+                with open(self.prompt_format, "r", encoding="utf-8") as f:
+                    return f.read()
+            return self.prompt_format
+        else:
+            return PROMPT_DEFAULT
 
 
 class InferenceArgumentsInput(BaseModel):
@@ -478,7 +474,7 @@ def inference(args: InferenceArguments, model, tokenizer, conv) -> List[str]:
     Inference with given arguments.
     """
     image_tensor = get_image_tensor(args.image_or_path)
-    text_formatted = format_prompt(args.text_or_path, PROMPT_DEFAULT)
+    text_formatted = format_prompt(args.text_or_path, args.get_prompt_format())
 
     if conv.sep_style == SeparatorStyle.TWO:
         stop_str = conv.sep2
