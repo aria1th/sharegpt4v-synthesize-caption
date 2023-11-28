@@ -801,6 +801,7 @@ def main():
         test_inference()
     # run the server
     # run gradio frontend with share option if specified
+    app: FastAPI = None
     if server_args.launch_option == "gradio":
         app, local_url = gradio_run(server_args.port)
     else:
@@ -808,14 +809,17 @@ def main():
     bind_inference_api(app)
     if server_args.test_api:
         import threading
-
         # run test api in another thread
         threading.Thread(
             target=test_api,
             args=(local_url, server_args.port, server_args.api_auth_pair),
         ).start()
-    uvicorn.run(app, port=server_args.port)
-
+    if server_args.launch_option == "uvicorn":
+        uvicorn.run(app, port=server_args.port)
+    else:
+        # block the main thread
+        while True:
+            pass
 
 if __name__ == "__main__":
     main()
