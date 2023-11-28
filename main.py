@@ -778,6 +778,8 @@ def gradio_run(port):
         result_text = gr.Textbox(lines=5, label="Results")
         
         def submit(prompt_text, tag_text, image, num_samples, temperature, top_p, max_new_tokens, use_cache, do_sample, image_text):
+            # debug
+            print(f"Prompt: {prompt_text}, Tags: {tag_text}, Image: --, Num Samples: {num_samples}, Temperature: {temperature},\n Top P: {top_p}, Max New Tokens: {max_new_tokens}, Use Cache: {use_cache}, Do Sample: {do_sample}, Image Text: {image_text}")
             # convert to InferenceArguments
             args = InferenceArguments(
                 num_samples=num_samples,
