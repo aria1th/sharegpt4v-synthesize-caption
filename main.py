@@ -381,9 +381,9 @@ class InferenceArgumentsInput(BaseModel):
         "do_sample": True,  # this should be True if temperature > 0, non-deterministic
     }
     delimeter: str = ". "
-    text_or_path: str = ""
-    image_or_path: str = ""
-
+    text_or_path: str = "1girl, white hair, short hair, lightblue eyes, flowers, light, sitting"
+    image_or_path: str = "https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207" # image
+    prompt_format: str = ""
 
 class InferenceArgumentsOutput(BaseModel):
     """
@@ -680,6 +680,9 @@ def bind_inference_api(app: FastAPI):
         """
         # check if model is loaded
         assert LOADED_STATE["model"] is not None, "Model is not loaded"
+        # if prompt format is not specified, use default
+        if not args.prompt_format:
+            args.prompt_format = PROMPT_DEFAULT
         outputs = inference(
             args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
         )
