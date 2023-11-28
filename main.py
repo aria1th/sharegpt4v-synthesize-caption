@@ -14,7 +14,6 @@ from llava.utils import disable_torch_init
 
 # set up server with uvicorn
 import uvicorn
-import gradio as gr
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
@@ -38,7 +37,7 @@ from llava.mm_utils import (
     KeywordsStoppingCriteria,
 )
 
-app = FastAPI()
+app = None
 
 from transformers import TextStreamer
 
@@ -216,12 +215,18 @@ class ServerArguments(dict):
     Handles server arguments for this session.
     """
 
-    kwargs_to_handle = ["port", "api_auth_file", "api_auth_pair", "launch_option", "test-inference"]
+    kwargs_to_handle = [
+        "port",
+        "api_auth_file",
+        "api_auth_pair",
+        "launch_option",
+        "test-inference",
+    ]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
     api_auth_pair: Optional[str] = "master:password"  # username:password
     launch_option: Optional[str] = "gradio"  # uvicorn, gradio(share)
-    test_inference: bool = False # test inference
+    test_inference: bool = False  # test inference
 
     def __init__(self, **kwargs):
         """
@@ -265,9 +270,7 @@ class ServerArguments(dict):
             help="launch option, can be uvicorn or gradio(to open gradio interface into public))",
         )
         parser.add_argument(
-            "--test-inference",
-            action="store_true",
-            help="Test inference"
+            "--test-inference", action="store_true", help="Test inference"
         )
 
     @staticmethod
@@ -657,19 +660,23 @@ def auth(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
     )
 
 
-@app.post(
-    "/inference", response_model=InferenceArgumentsOutput, dependencies=[Depends(auth)]
-)
-def wrap_inference(args: InferenceArguments) -> InferenceArgumentsOutput:
+def bind_inference_api(app:FastAPI):
     """
-    Wrap inference.
+    Binds inference api.
     """
-    # check if model is loaded
-    assert LOADED_STATE["model"] is not None, "Model is not loaded"
-    outputs = inference(
-        args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
+    @app.post(
+        "/inference", response_model=InferenceArgumentsOutput, dependencies=[Depends(auth)]
     )
-    return InferenceArgumentsOutput(samples_texts=outputs)
+    def wrap_inference(args: InferenceArguments) -> InferenceArgumentsOutput:
+        """
+        Wrap inference.
+        """
+        # check if model is loaded
+        assert LOADED_STATE["model"] is not None, "Model is not loaded"
+        outputs = inference(
+            args, LOADED_STATE["model"], LOADED_STATE["tokenizer"], LOADED_STATE["conv"]
+        )
+        return InferenceArgumentsOutput(samples_texts=outputs)
 
 
 def test_inference():
@@ -698,14 +705,29 @@ def test_inference():
     )
     print(result)
 
+
 def gradio_run(port):
     """
     Run gradio interface.
     """
+    try:
+        import gradio as gr # pylint: disable=import-outside-toplevel
+    except ImportError:
+        # gradio not installed
+        print("Gradio not installed, skipping gradio interface")
+        return FastAPI()
     # simple title
-    with gr.Blocks() as title:
-        gr.Markdown("LLaVA")
-    title.launch(share=True, server_port=port)
+    with gr.Blocks() as interface:
+        gr.Markdown("## LLaVA")
+    gradio_app, local_url, share_url = interface.launch(
+        share=True, server_port=port,
+        app_kwargs=
+            {
+                "docs_url": "/docs",
+                "redoc_url": "/redoc",
+            }
+    )
+    return gradio_app
 
 def main():
     """
@@ -728,7 +750,10 @@ def main():
     # run the server
     # run gradio frontend with share option if specified
     if server_args.launch_option == "gradio":
-        gradio_run(server_args.port)
+        app = gradio_run(server_args.port)
+    else:
+        app = FastAPI()
+    bind_inference_api(app)
     uvicorn.run(app, port=server_args.port)
 
 if __name__ == "__main__":
