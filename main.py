@@ -4,7 +4,7 @@ import base64
 import argparse
 import json
 import requests
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import TemporaryFile, TemporaryDirectory
 from secrets import compare_digest
 from typing import List, Optional, Type, Dict, Any
 from tqdm import tqdm
@@ -486,7 +486,7 @@ def handle_temp_image(image_path_or_str: str) -> str:
         # get the image extension from header
         file_extension = image_file.headers["Content-Type"].split("/")[-1]
         # save the image to temporary directory
-        with NamedTemporaryFile(
+        with TemporaryFile(
             dir=TEMP_IMAGE_DIR.name, delete=False, suffix=f".{file_extension}"
         ) as f:
             f.write(image_file_content)
