@@ -852,19 +852,19 @@ def main():
     else:
         app, local_url = FastAPI(), "http://127.0.0.1"
     bind_inference_api(app)
-    if server_args.test_api:
-        import threading
-        # run test api in another thread
-        threading.Thread(
-            target=test_api,
-            args=(local_url, server_args.api_auth_pair),
-        ).start()
     if server_args.launch_option == "uvicorn":
+        # schedule test api
+        if server_args.test_api:
+            import threading
+            threading.Thread(target=test_api, args=(local_url, server_args.api_auth_pair)).start()
         uvicorn.run(app, port=server_args.port)
     else:
+        if server_args.test_api:
+            test_api(local_url, server_args.api_auth_pair)
         # block the main thread
+        import time
         while True:
-            pass
+            time.sleep(1)
 
 if __name__ == "__main__":
     main()
