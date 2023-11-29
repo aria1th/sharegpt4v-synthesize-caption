@@ -27,5 +27,8 @@ copy sharegpt4v-synthesize-caption\patch.py patch.py
 python patch.py --patch-file ./llava/model/multimodal_encoder/builder.py --line-num 7 --content '    if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion") or "ShareGPT4V" in vision_tower:'
 python patch.py --patch-file ./llava/model/builder.py --line-num 130 --content '    if "llava" in model_name.lower() or "sharegpt4v" in model_name.lower():\n'
 
-:: Execution of main.py
-python main.py --port 9051 --launch-option gradio
+:: Execution of main.py, test with --test-api
+python main.py --port 9051 --launch-option gradio --test-api
+
+:: Deactivate venv
+call venv\Scripts\deactivate.bat
