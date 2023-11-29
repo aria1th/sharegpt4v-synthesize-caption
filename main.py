@@ -100,6 +100,7 @@ class LLavaArguments(
     conv_mode: Optional[str] = None
     load_8bit: bool = False
     load_4bit: bool = False
+    cuda_devices: Optional[str] = None
 
     def __init__(self, **kwargs):
         """
@@ -135,6 +136,12 @@ class LLavaArguments(
             type=str,
             default="cuda",
             help="device to use for inference",
+        )
+        parser.add_argument(
+            "--cuda-devices",
+            type=str,
+            default=None,
+            help="cuda devices to use for inference",
         )
         parser.add_argument(
             "--dtype",
