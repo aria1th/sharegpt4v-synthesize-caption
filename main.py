@@ -544,16 +544,22 @@ def load_image(image_path_or_str: Union[str, np.ndarray]) -> Image.Image:
 def clean_up_temp_image() -> None:
     """
     Clean up the temporary directory.
+    Hopefully we can ignore the error for temporary directory.
     """
-    TEMP_IMAGE_DIR.cleanup()
-    # reset dir
-    TEMP_IMAGE_DIR.__init__()
-    TEMP_IMAGE_CACHE.clear()
-    for temp_image in TEMP_IMAGES:
-        try:
-            temp_image.close()
-        except Exception as e:
-            print(f"Error while closing temporary image {temp_image}: {e}")
+    try:
+        TEMP_IMAGE_DIR.cleanup()
+        TEMP_IMAGE_CACHE.clear()
+        for temp_image in TEMP_IMAGES:
+            try:
+                temp_image.close()
+            except Exception as e:
+                print(f"Error while closing temporary image {temp_image}: {e}")
+    except Exception as e:
+        print(f"Error while cleaning up temporary directory {TEMP_IMAGE_DIR}: {e}")
+    finally:
+        TEMP_IMAGE_DIR = TemporaryDirectory() # temporary directory for images again
+        TEMP_IMAGES.clear()
+        TEMP_IMAGE_CACHE.clear()
 
 def get_image_tensor(image_str) -> torch.Tensor:
     """
