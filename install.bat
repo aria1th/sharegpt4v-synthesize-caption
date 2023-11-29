@@ -23,9 +23,9 @@ copy sharegpt4v-synthesize-caption\patch.py patch.py
 ::patch_file('./llava/model/multimodal_encoder/builder.py', 7, '    if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion") or "ShareGPT4V" in vision_tower:')
 ::patch_file('./llava/model/builder.py', 130, '    if "llava" in model_name.lower() or "sharegpt4v" in model_name.lower():\n')
 
-::call patch.py with python
-python patch.py './llava/model/multimodal_encoder/builder.py' 7 '    if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion") or "ShareGPT4V" in vision_tower:'
-python patch.py './llava/model/builder.py' 130 '    if "llava" in model_name.lower() or "sharegpt4v" in model_name.lower():\n'
+::call patch.py with python, --patch-file, --line-num, --content
+python patch.py --patch-file ./llava/model/multimodal_encoder/builder.py --line-num 7 --content '    if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion") or "ShareGPT4V" in vision_tower:'
+python patch.py --patch-file ./llava/model/builder.py --line-num 130 --content '    if "llava" in model_name.lower() or "sharegpt4v" in model_name.lower():\n'
 
 :: Execution of main.py
 python main.py --port 9051 --launch-option gradio
