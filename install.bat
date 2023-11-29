@@ -18,13 +18,12 @@ if "%VIRTUAL_ENV%" == "" (
 :: skip if already installed
 if exist LLaVA (
     echo "LLaVA already installed"
+    cd LLaVA
 ) else (
     git clone https://github.com/haotian-liu/LLaVA
     cd LLaVA
     pip install --upgrade pip
     pip install -e .
-
-    cd ..
 )
 :: update git repository if already cloned
 if exist sharegpt4v-synthesize-caption (
