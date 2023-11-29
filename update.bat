@@ -5,6 +5,7 @@ SETLOCAL EnableDelayedExpansion
 
 call venv\Scripts\activate.bat
 
+cd LLaVA
 :: Updating the repository
 cd ./sharegpt4v-synthesize-caption
 git stash
@@ -17,4 +18,5 @@ copy sharegpt4v-synthesize-caption\main.py main.py
 python main.py --port 9051 --launch-option gradio
 
 :: Deactivate venv
+cd ..
 call venv\Scripts\deactivate.bat
