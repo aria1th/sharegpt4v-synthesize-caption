@@ -20,12 +20,8 @@ def main():
     """
     Main entry point.
     """
-    parser = argparse.ArgumentParser(description='Patch a file.')
-    parser.add_argument('--patch-file', type=str, help='path to file')
-    parser.add_argument('--line-num', type=int, help='line number')
-    parser.add_argument('--content', type=str, help='content')
-    args = parser.parse_args()
-    patch_file(args.file_path, args.line_num, args.content)
+    patch_file('./llava/model/multimodal_encoder/builder.py', 7, '    if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion") or "ShareGPT4V" in vision_tower:')
+    patch_file('./llava/model/builder.py', 130, '    if "llava" in model_name.lower() or "sharegpt4v" in model_name.lower():\n')
 
 if __name__ == '__main__':
     main()        
