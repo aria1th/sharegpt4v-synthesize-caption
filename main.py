@@ -546,6 +546,7 @@ def clean_up_temp_image() -> None:
     Clean up the temporary directory.
     Hopefully we can ignore the error for temporary directory.
     """
+    global TEMP_IMAGE_DIR, TEMP_IMAGES, TEMP_IMAGE_CACHE
     try:
         TEMP_IMAGE_DIR.cleanup()
         TEMP_IMAGE_CACHE.clear()
@@ -555,7 +556,7 @@ def clean_up_temp_image() -> None:
             except Exception as e:
                 print(f"Error while closing temporary image {temp_image}: {e}")
     except Exception as e:
-        print(f"Error while cleaning up temporary directory {TEMP_IMAGE_DIR}: {e}")
+        print(f"Error while cleaning up temporary directory : {e}")
     finally:
         TEMP_IMAGE_DIR = TemporaryDirectory() # temporary directory for images again
         TEMP_IMAGES.clear()
