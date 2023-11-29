@@ -17,7 +17,9 @@ fi
 if [ -d "LLaVA" ]; then
     cd LLaVA
 else
-    git clone https://github.com/haotian-liu/LLaVA
+    # clone forked repository https://github.com/aria1th/LLaVA 's  temp-sharegpt4v-patch branch
+    git clone https://github.com/aria1th/LLaVA -b temp-sharegpt4v-patch
+    #git clone https://github.com/haotian-liu/LLaVA
     cd LLaVA
     pip install --upgrade pip
     pip install -e .
@@ -40,10 +42,10 @@ else
 fi
 
 cp sharegpt4v-synthesize-caption/main.py main.py
-cp sharegpt4v-synthesize-caption/patch.py patch.py
+#cp sharegpt4v-synthesize-caption/patch.py patch.py
 
 #call patch.py
-python3 patch.py
+#python3 patch.py
 
 # Execution of main.py, test with --test-api
 python3 main.py --port 9051 --launch-option gradio --test-api --cuda-devices 0
