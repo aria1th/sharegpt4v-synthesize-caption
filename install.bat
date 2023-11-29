@@ -24,6 +24,10 @@ if exist LLaVA (
     cd LLaVA
     pip install --upgrade pip
     pip install -e .
+    :: re-install torhc with cuda 118
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 --upgrade
+    :: now it should work
+    pip install gradio
 )
 :: update git repository if already cloned
 if exist sharegpt4v-synthesize-caption (
@@ -51,3 +55,4 @@ python main.py --port 9051 --launch-option gradio --test-api
 :: Deactivate venv
 cd ..
 call venv\Scripts\deactivate.bat
+pause

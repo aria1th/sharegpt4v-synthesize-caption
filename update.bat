@@ -20,3 +20,5 @@ python main.py --port 9051 --launch-option gradio
 :: Deactivate venv
 cd ..
 call venv\Scripts\deactivate.bat
+
+pause
