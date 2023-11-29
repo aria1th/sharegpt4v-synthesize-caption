@@ -28,6 +28,7 @@ if exist LLaVA (
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 --upgrade
     :: now it should work
     pip install gradio
+    pip install bitsandbytes-windows
 )
 :: update git repository if already cloned
 if exist sharegpt4v-synthesize-caption (
