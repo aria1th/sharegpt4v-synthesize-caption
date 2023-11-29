@@ -49,4 +49,5 @@ python patch.py
 python main.py --port 9051 --launch-option gradio --test-api
 
 :: Deactivate venv
+cd ..
 call venv\Scripts\deactivate.bat
