@@ -182,6 +182,7 @@ class QueryHandler:
         """
         Finalize the jobs.
         """
+        self.stop_flag.set()
         if self.iterator_thread is not None:
             self.iterator_thread.join()
             logging.getLogger().info("Iterator thread joined")
@@ -209,9 +210,6 @@ class QueryHandler:
                 self.append_job(*next(self.iterator))
             except StopIteration:
                 self.iterator = None
-                # kill thread
-                self.iterator_thread = None
-                self.stop_flag.set()
                 return None
 
     def register_iterator(self, iterator):
