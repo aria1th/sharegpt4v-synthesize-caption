@@ -177,8 +177,9 @@ class QueryHandler:
         """
         if self.iterator_thread is not None:
             self.iterator_thread.join()
+            logging.getLogger().info("Iterator thread joined")
         self.queue.join()
-        self.thread.join()
+        logging.getLogger().info("Queue joined")
 
     def append_job(self, job_id: int, data: dict) -> int:
         """
