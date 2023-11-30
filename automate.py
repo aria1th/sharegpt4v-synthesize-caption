@@ -4,6 +4,7 @@ Code version to query API locally or remotely
 import argparse
 import json
 import os
+import sys
 import time
 import tqdm
 import logging
@@ -174,6 +175,7 @@ class QueryHandler:
         if self.iterator_thread is not None:
             self.iterator_thread.join()
         self.queue.join()
+        self.thread.join()
 
     def append_job(self, job_id: int, data: dict) -> int:
         """
@@ -314,7 +316,7 @@ if __name__ == "__main__":
         assert all(
             v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()
         ), "Failed to finish test job"
-        exit(0)
+        sys.exit(0)
     job_results_merged = main(
         args.urls, args.auths, jobs_database
     )  # Note, job_database should now be locked
