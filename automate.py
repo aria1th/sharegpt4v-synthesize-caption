@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 API_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/") + "/inference"
-API_AUTH = os.getenv("API_AUTH", "master:password").split(":")
+API_AUTH = os.getenv("API_AUTH", "master:password")
 # Add your API URLs here or maybe dotenv
 API_URLS = {
     API_URL,
