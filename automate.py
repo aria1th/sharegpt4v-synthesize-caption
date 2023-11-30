@@ -88,8 +88,9 @@ class QueryHandler:
         # if ends with / remove it
         self.api_url = api_url.rstrip("/") + "/inference"
         self.api_auth = api_auth
+        logging.getLogger().info(f"API URL: {self.api_url}, API AUTH: {self.api_auth}")
         self.session = requests.Session()
-        self.session.auth = self.api_auth.split(":")
+        self.session.auth = tuple(api_auth.split(":"))
         self.queue = Queue()
         self.thread = threading.Thread(target=self._process_queue)
         self.job_count = 0
