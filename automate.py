@@ -219,12 +219,13 @@ def main(urls, auths, job_database: Dict[int, Dict]):
 
     pbar = tqdm.tqdm(total=len(job_database))
     try:
-        while any(
-            handler.job_done < handler.job_count for handler in job_handlers.values()
-        ):
-            pbar.update(
-                sum(handler.job_done for handler in job_handlers.values()) - pbar.n
-            )
+        while True:
+            job_done = 0
+            for handler in job_handlers.values():
+                job_done += handler.get_progress()[0]
+            pbar.update(job_done - pbar.n)
+            if job_done == len(job_database):
+                break
             time.sleep(0.1)
     finally:
         pbar.close()
