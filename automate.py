@@ -166,7 +166,7 @@ class QueryHandler:
         """
         while not self.stop_flag.is_set():
             try:
-                data, job_id = self.queue.get()
+                data, job_id = self.queue.get(block=False) # should not block, instead raise Empty
                 result = self._query(data, job_id)
                 if result is not None:
                     self._write_result(job_id, result)
