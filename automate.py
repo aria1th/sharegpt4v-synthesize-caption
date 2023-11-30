@@ -100,7 +100,7 @@ class QueryHandler:
 
     def get_progress(self) -> Tuple[int, int]:
         """
-        Get progress
+        Returns (job_done, job_count)
         """
         return self.job_done, self.job_count
 
@@ -173,7 +173,12 @@ class QueryHandler:
         Append job
         """
         self.job_count += 1
-        self.queue.put((data, job_id,))
+        self.queue.put(
+            (
+                data,
+                job_id,
+            )
+        )
         return job_id
 
     def _from_iterator(self):
@@ -208,12 +213,14 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     Main function
     """
     job_handlers: Dict[str, QueryHandler] = {}
+    logging.getLogger().info(f"Starting {len(urls)} handlers")
+    logging.getLogger().info(f"Job database size: {len(job_database)}")
     for _i, url in enumerate(urls):
         timestamp = int(time.time())
         handler = QueryHandler(url, auths[_i], f"results_{timestamp}.jsonl")
         job_handlers[url] = handler
         handler.start()
-    iterator = iter(job_database.items()) # iterator that yields (job_id, data)
+    iterator = iter(job_database.items())  # iterator that yields (job_id, data)
     for handlers in job_handlers.values():
         handlers.register_iterator(iterator)
 
@@ -251,7 +258,7 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     return job_results
 
 
-def test_job():
+def test_job(api_urls, api_auths):
     """
     Test job
     """
@@ -270,18 +277,21 @@ def test_job():
             },
             "delimeter": ". ",
             "text_or_path": "1girl, white hair, short hair, lightblue eyes, flowers, light, sitting",
-            "image_or_path": "https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207"
+            "image_or_path": "https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207",
         }
-    test_job_results = main(API_URLS, API_AUTHS, job_database)
+    test_job_results = main(api_urls, api_auths, job_database)
     return test_job_results
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--urls", nargs="+", default=["localhost:8000"])
     parser.add_argument("--auths", nargs="+", default=["master:password"])
-    parser.add_argument("--job-logs-database", default="job_logs_database.json") # contains job_id, status
-    parser.add_argument("--job-database", default="job_database.json") # contains job_id, data
+    parser.add_argument(
+        "--job-logs-database", default="job_logs_database.json"
+    )  # contains job_id, status
+    parser.add_argument(
+        "--job-database", default="job_database.json"
+    )  # contains job_id, data
     parser.add_argument("--test-job", action="store_true")
     args = parser.parse_args()
     if os.path.exists(args.job_logs_database):
@@ -291,9 +301,11 @@ if __name__ == "__main__":
         with open(args.job_database, "r", encoding="utf-8") as f:
             jobs_database = json.load(f)
     if args.test_job:
-        test_result = test_job()
+        test_result = test_job(args.urls, args.auths)
         assert len(test_result) == 10, "Failed to finish test job"
-        assert all(v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()), "Failed to finish test job"
+        assert all(
+            v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()
+        ), "Failed to finish test job"
         exit(0)
     job_results_merged = main(
         args.urls, args.auths, jobs_database
