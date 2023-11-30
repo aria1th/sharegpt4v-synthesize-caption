@@ -22,7 +22,7 @@ API_AUTH = os.getenv("API_AUTH", "master:password").split(":")
 API_URLS = {
     API_URL,
 }
-API_AUTHS = {"localhost": API_AUTH}
+API_AUTHS = [API_AUTH]
 
 JOB_LOGS_DATABASE = {}
 
@@ -208,9 +208,9 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     Main function
     """
     job_handlers: Dict[str, QueryHandler] = {}
-    for url in urls:
+    for _i, url in enumerate(urls):
         timestamp = int(time.time())
-        handler = QueryHandler(url, auths[url], f"results_{timestamp}.jsonl")
+        handler = QueryHandler(url, auths[_i], f"results_{timestamp}.jsonl")
         job_handlers[url] = handler
         handler.start()
 
