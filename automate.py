@@ -13,6 +13,8 @@ from queue import Queue, Empty
 from typing import Optional, Dict, Tuple
 import requests
 
+LOGGED_THREADS:set[threading.Thread] = set()
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -99,6 +101,7 @@ class QueryHandler:
         self.job_logs_database = {}
         self.stop_flag = threading.Event() # stop flag
         self.result_file = _result_file
+        LOGGED_THREADS.add(self.thread)
         
     def stop(self):
         """
@@ -218,6 +221,7 @@ class QueryHandler:
         self.iterator = iterator
         self.iterator_thread = threading.Thread(target=self._from_iterator)
         self.iterator_thread.start()
+        LOGGED_THREADS.add(self.iterator_thread)
 
     def get_job_logs_database(self):
         """
@@ -341,3 +345,16 @@ if __name__ == "__main__":
             json.dump(JOB_LOGS_DATABASE, f, indent=4)
         with open("job_results.json", "w", encoding="utf-8") as f:
             json.dump(job_results_merged, f, indent=4)
+    # shutdown all threads
+    logging.getLogger().info("Shutting down")
+    for thread in LOGGED_THREADS:
+        thread.join(timeout=1) # wait for 1 second
+        if thread.is_alive():
+            logging.getLogger().error(f"Thread {thread} is still alive")
+            # force shutdown
+            try:
+                thread._tstate_lock.acquire() # acquire lock
+                thread._stop()
+            finally:
+                thread._tstate_lock.release()
+    logging.getLogger().info("Done")
