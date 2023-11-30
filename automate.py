@@ -283,10 +283,12 @@ if __name__ == "__main__":
     parser.add_argument("--job-database", default="job_database.json") # contains job_id, data
     parser.add_argument("--test-job", action="store_true")
     args = parser.parse_args()
-    with open(args.job_logs_database, "r", encoding="utf-8") as f:
-        JOB_LOGS_DATABASE = json.load(f)
-    with open(args.job_database, "r", encoding="utf-8") as f:
-        jobs_database = json.load(f)
+    if os.path.exists(args.job_logs_database):
+        with open(args.job_logs_database, "r", encoding="utf-8") as f:
+            JOB_LOGS_DATABASE = json.load(f)
+    if os.path.exists(args.job_database):
+        with open(args.job_database, "r", encoding="utf-8") as f:
+            jobs_database = json.load(f)
     if args.test_job:
         test_result = test_job()
         assert len(test_result) == 10, "Failed to finish test job"
