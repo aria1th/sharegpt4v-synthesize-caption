@@ -4,13 +4,12 @@ Code version to query API locally or remotely
 import argparse
 import json
 import os
-import sys
 import time
 import tqdm
 import logging
 import threading
 from queue import Queue
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, Dict, Tuple
 import requests
 
 logging.basicConfig(
@@ -84,7 +83,7 @@ class QueryHandler:
     Handles queries to API
     """
 
-    def __init__(self, api_url: str, api_auth: str):
+    def __init__(self, api_url: str, api_auth: str, _result_file: str = None):
         # if ends with / remove it
         self.api_url = api_url.rstrip("/") + "/inference"
         self.api_auth = api_auth
@@ -97,12 +96,23 @@ class QueryHandler:
         self.iterator = None
         self.iterator_thread = None
         self.job_logs_database = {}
+        self.result_file = _result_file
 
     def get_progress(self) -> Tuple[int, int]:
         """
         Get progress
         """
         return self.job_done, self.job_count
+
+    def _write_result(self, job_id: int, result: dict):
+        """
+        Write result to database as jsonl
+        """
+        if self.result_file is None:
+            return
+        with open(self.result_file, "a", encoding="utf-8") as f:
+            json.dump({"job_id": job_id, "result": result}, f)
+            f.write("\n")
 
     def _query(self, data: dict, job_id: int) -> Optional[dict]:
         """
@@ -139,7 +149,9 @@ class QueryHandler:
                 time.sleep(0.1)
                 continue
             data, job_id = self.queue.get()
-            self._query(data, job_id)
+            result = self._query(data, job_id)
+            if result is not None:
+                self._write_result(job_id, result)
             self.queue.task_done()
 
     def start(self):
@@ -197,7 +209,8 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     """
     job_handlers: Dict[str, QueryHandler] = {}
     for url in urls:
-        handler = QueryHandler(url, auths[url])
+        timestamp = int(time.time())
+        handler = QueryHandler(url, auths[url], f"results_{timestamp}.jsonl")
         job_handlers[url] = handler
         handler.start()
 
@@ -223,19 +236,66 @@ def main(urls, auths, job_database: Dict[int, Dict]):
         updated_job_logs_database.update(handler.get_job_logs_database())
     # update job logs database
     JOB_LOGS_DATABASE.update(updated_job_logs_database)
+    # join job_results
+    job_results = {}
+    for handler in job_handlers.values():
+        result_file = handler.result_file
+        if result_file is None:
+            continue
+        with open(result_file, "r", encoding="utf-8") as f:
+            for line in f:
+                result = json.loads(line)
+                job_results[result["job_id"]] = result["result"]
     print("All jobs finished")
+    return job_results
+
+
+def test_job():
+    """
+    Test job
+    """
+    # Updates JOB_LOGS_DATABASE with a test job
+    job_database = {}
+    for i in range(10):
+        JOB_LOGS_DATABASE[i] = JobStatus.NOT_STARTED
+        job_database[i] = {
+            "num_samples": 5,
+            "inference_kwargs": {
+                "temperature": 0.2,
+                "top_p": 0.95,
+                "max_new_tokens": 256,
+                "use_cache": True,
+                "do_sample": True,
+            },
+            "delimeter": ". ",
+            "text_or_path": "1girl, white hair, short hair, lightblue eyes, flowers, light, sitting",
+            "image_or_path": "https://github.com/AUTOMATIC1111/stable-diffusion-webui/assets/35677394/f6929d4d-5991-4c10-b013-0743ffc8e207"
+        }
+    test_job_results = main(API_URLS, API_AUTHS, job_database)
+    return test_job_results
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--urls", nargs="+", default=["localhost:8000"])
     parser.add_argument("--auths", nargs="+", default=["master:password"])
-    parser.add_argument("--job-logs-database", default="job_logs_database.json")
+    parser.add_argument("--job-logs-database", default="job_logs_database.json") # contains job_id, status
+    parser.add_argument("--job-database", default="job_database.json") # contains job_id, data
+    parser.add_argument("--test-job", action="store_true")
     args = parser.parse_args()
     with open(args.job_logs_database, "r", encoding="utf-8") as f:
         JOB_LOGS_DATABASE = json.load(f)
-    main(
-        args.urls, args.auths, JOB_LOGS_DATABASE
-    )  # Note, JOB_LOGS_DATABASE should now be locked
+    with open(args.job_database, "r", encoding="utf-8") as f:
+        jobs_database = json.load(f)
+    if args.test_job:
+        test_result = test_job()
+        assert len(test_result) == 10, "Failed to finish test job"
+        assert all(v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()), "Failed to finish test job"
+        exit(0)
+    job_results_merged = main(
+        args.urls, args.auths, jobs_database
+    )  # Note, job_database should now be locked
     with open(args.job_logs_database, "w", encoding="utf-8") as f:
         json.dump(JOB_LOGS_DATABASE, f, indent=4)
+    with open("job_results.json", "w", encoding="utf-8") as f:
+        json.dump(job_results_merged, f, indent=4)
