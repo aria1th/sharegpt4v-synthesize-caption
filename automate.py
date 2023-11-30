@@ -119,11 +119,13 @@ class QueryHandler:
         Query API with refined exception handling
         """
         try:
-            if self.job_logs_database.get(job_id) != JobStatus.NOT_STARTED:
+            if (
+                self.job_logs_database.get(job_id, JobStatus.NOT_STARTED) != JobStatus.NOT_STARTED
+            ):
                 logging.getLogger().error(
-                    f"Job {job_id} is already running or finished"
+                    f"Job {job_id} status is {self.job_logs_database.get(job_id)} but should be {JobStatus.NOT_STARTED}"
                 )
-                return None
+                return No
             data = sanitize_data(data)
             self.job_logs_database[job_id] = JobStatus.RUNNING
             response = self.session.post(self.api_url, json=data)
@@ -284,6 +286,7 @@ def test_job(api_urls, api_auths):
         }
     test_job_results = main(api_urls, api_auths, job_database)
     return test_job_results
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
