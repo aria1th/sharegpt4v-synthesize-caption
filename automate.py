@@ -8,6 +8,7 @@ import time
 import tqdm
 import logging
 import threading
+import traceback
 from queue import Queue
 from typing import Optional, Dict, Tuple
 import requests
@@ -139,7 +140,8 @@ class QueryHandler:
             self.job_logs_database[job_id] = JobStatus.FAILED
             return None
         except Exception as e:
-            logging.getLogger().error(f"Unexpected exception for job {job_id}: {e}")
+            # print with a traceback
+            logging.getLogger().error(f"Unexpected exception for job {job_id}: {e}, {traceback.format_exc()}")
             self.job_logs_database[job_id] = JobStatus.FAILED
             return None
         finally:
