@@ -211,6 +211,7 @@ class QueryHandler:
                 self.iterator = None
                 # kill thread
                 self.iterator_thread = None
+                self.stop_flag.set()
                 return None
 
     def register_iterator(self, iterator):
@@ -332,6 +333,7 @@ if __name__ == "__main__":
         assert all(
             v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()
         ), "Failed to finish test job"
+        logging.getLogger().info("Test Passed")
         sys.exit(0)
     job_results_merged = main(
         args.urls, args.auths, jobs_database
