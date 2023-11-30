@@ -10,7 +10,7 @@ import tqdm
 import logging
 import threading
 import traceback
-from queue import Queue
+from queue import Queue, Empty
 from typing import Optional, Dict, Tuple
 import requests
 
@@ -98,7 +98,14 @@ class QueryHandler:
         self.iterator = None
         self.iterator_thread = None
         self.job_logs_database = {}
+        self.stop_flag = threading.Event() # stop flag
         self.result_file = _result_file
+        
+    def stop(self):
+        """
+        Stop the thread
+        """
+        self.stop_flag.set()
 
     def get_progress(self) -> Tuple[int, int]:
         """
@@ -155,15 +162,15 @@ class QueryHandler:
         """
         Process queue
         """
-        while True:
-            if self.queue.empty():
+        while not self.stop_flag.is_set():
+            try:
+                data, job_id = self.queue.get()
+                result = self._query(data, job_id)
+                if result is not None:
+                    self._write_result(job_id, result)
+                self.queue.task_done()
+            except Empty:
                 time.sleep(0.1)
-                continue
-            data, job_id = self.queue.get()
-            result = self._query(data, job_id)
-            if result is not None:
-                self._write_result(job_id, result)
-            self.queue.task_done()
 
     def start(self):
         """
@@ -226,48 +233,52 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     Main function
     """
     job_handlers: Dict[str, QueryHandler] = {}
-    logging.getLogger().info(f"Starting {len(urls)} handlers")
-    logging.getLogger().info(f"Job database size: {len(job_database)}")
-    for _i, url in enumerate(urls):
-        timestamp = int(time.time())
-        handler = QueryHandler(url, auths[_i], f"results_{timestamp}.jsonl")
-        job_handlers[url] = handler
-        handler.start()
-    iterator = iter(job_database.items())  # iterator that yields (job_id, data)
-    for handlers in job_handlers.values():
-        handlers.register_iterator(iterator)
-
-    pbar = tqdm.tqdm(total=len(job_database))
     try:
-        while True:
-            job_done = 0
-            for handler in job_handlers.values():
-                job_done += handler.get_progress()[0]
-            pbar.update(job_done - pbar.n)
-            if job_done == len(job_database):
-                break
-            time.sleep(0.1)
-    finally:
-        pbar.close()
+        logging.getLogger().info(f"Starting {len(urls)} handlers")
+        logging.getLogger().info(f"Job database size: {len(job_database)}")
+        for _i, url in enumerate(urls):
+            timestamp = int(time.time())
+            handler = QueryHandler(url, auths[_i], f"results_{timestamp}.jsonl")
+            job_handlers[url] = handler
+            handler.start()
+        iterator = iter(job_database.items())  # iterator that yields (job_id, data)
+        for handlers in job_handlers.values():
+            handlers.register_iterator(iterator)
 
-    for handler in job_handlers.values():
-        handler.wait()
-    updated_job_logs_database = {}
-    for handler in job_handlers.values():
-        updated_job_logs_database.update(handler.get_job_logs_database())
-    # update job logs database
-    JOB_LOGS_DATABASE.update(updated_job_logs_database)
-    # join job_results
-    job_results = {}
-    for handler in job_handlers.values():
-        result_file = handler.result_file
-        if result_file is None or not os.path.exists(result_file):
-            continue
-        with open(result_file, "r", encoding="utf-8") as f:
-            for line in f:
-                result = json.loads(line)
-                job_results[result["job_id"]] = result["result"]
-    print("All jobs finished")
+        pbar = tqdm.tqdm(total=len(job_database))
+        try:
+            while True:
+                job_done = 0
+                for handler in job_handlers.values():
+                    job_done += handler.get_progress()[0]
+                pbar.update(job_done - pbar.n)
+                if job_done == len(job_database):
+                    break
+                time.sleep(0.1)
+        finally:
+            pbar.close()
+
+        for handler in job_handlers.values():
+            handler.wait()
+        updated_job_logs_database = {}
+        for handler in job_handlers.values():
+            updated_job_logs_database.update(handler.get_job_logs_database())
+        # update job logs database
+        JOB_LOGS_DATABASE.update(updated_job_logs_database)
+        # join job_results
+        job_results = {}
+        for handler in job_handlers.values():
+            result_file = handler.result_file
+            if result_file is None or not os.path.exists(result_file):
+                continue
+            with open(result_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    result = json.loads(line)
+                    job_results[result["job_id"]] = result["result"]
+        print("All jobs finished")
+    finally:
+        for handler in job_handlers.values():
+            handler.stop()
     return job_results
 
 
