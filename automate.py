@@ -178,7 +178,7 @@ class QueryHandler:
 
     def _from_iterator(self):
         while True:
-            if self.iterator is None or len(self.queue) > 0:
+            if self.iterator is None or self.queue.qsize() > 100:
                 time.sleep(0.1)
             try:
                 self.append_job(*next(self.iterator))
@@ -240,7 +240,7 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     job_results = {}
     for handler in job_handlers.values():
         result_file = handler.result_file
-        if result_file is None:
+        if result_file is None or not os.path.exists(result_file):
             continue
         with open(result_file, "r", encoding="utf-8") as f:
             for line in f:
