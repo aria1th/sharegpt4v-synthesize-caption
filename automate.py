@@ -276,10 +276,12 @@ def main(urls, auths, job_database: Dict[int, Dict]):
                 for line in f:
                     result = json.loads(line)
                     job_results[result["job_id"]] = result["result"]
-        print("All jobs finished")
+        logging.getLogger().info(f"Job results size: {len(job_results)}")
     finally:
+        logging.getLogger().info("Stopping handlers")
         for handler in job_handlers.values():
             handler.stop()
+    logging.getLogger().info("Done")
     return job_results
 
 
