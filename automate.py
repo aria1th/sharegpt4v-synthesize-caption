@@ -173,7 +173,7 @@ class QueryHandler:
         Append job
         """
         self.job_count += 1
-        self.queue.put(data, job_id)
+        self.queue.put((data, job_id,))
         return job_id
 
     def _from_iterator(self):
@@ -213,7 +213,7 @@ def main(urls, auths, job_database: Dict[int, Dict]):
         handler = QueryHandler(url, auths[_i], f"results_{timestamp}.jsonl")
         job_handlers[url] = handler
         handler.start()
-    iterator = iter(job_database.items())
+    iterator = iter(job_database.items()) # iterator that yields (job_id, data)
     for handlers in job_handlers.values():
         handlers.register_iterator(iterator)
 
