@@ -246,6 +246,11 @@ class ServerArguments(dict):
         )
         # setattr for fields
         for k, v in self.items():
+            # set auth variables, static
+            if k == "api_auth_file":
+                ServerArguments.api_auth_file = v
+            elif k == "api_auth_pair":
+                ServerArguments.api_auth_pair = v
             setattr(self, k, v)
 
     @staticmethod
