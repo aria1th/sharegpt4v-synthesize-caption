@@ -4,7 +4,6 @@ Code version to query API locally or remotely
 import argparse
 import json
 import os
-import sys
 import time
 import tqdm
 import logging
@@ -334,11 +333,11 @@ if __name__ == "__main__":
             v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()
         ), "Failed to finish test job"
         logging.getLogger().info("Test Passed")
-        sys.exit(0)
-    job_results_merged = main(
-        args.urls, args.auths, jobs_database
-    )  # Note, job_database should now be locked
-    with open(args.job_logs_database, "w", encoding="utf-8") as f:
-        json.dump(JOB_LOGS_DATABASE, f, indent=4)
-    with open("job_results.json", "w", encoding="utf-8") as f:
-        json.dump(job_results_merged, f, indent=4)
+    else:
+        job_results_merged = main(
+            args.urls, args.auths, jobs_database
+        )  # Note, job_database should now be locked
+        with open(args.job_logs_database, "w", encoding="utf-8") as f:
+            json.dump(JOB_LOGS_DATABASE, f, indent=4)
+        with open("job_results.json", "w", encoding="utf-8") as f:
+            json.dump(job_results_merged, f, indent=4)
