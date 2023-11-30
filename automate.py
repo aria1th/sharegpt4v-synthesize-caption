@@ -122,7 +122,8 @@ class QueryHandler:
         """
         try:
             if (
-                self.job_logs_database.get(job_id, JobStatus.NOT_STARTED) != JobStatus.NOT_STARTED
+                self.job_logs_database.get(job_id, JobStatus.NOT_STARTED)
+                != JobStatus.NOT_STARTED
             ):
                 logging.getLogger().error(
                     f"Job {job_id} status is {self.job_logs_database.get(job_id, JobStatus.NOT_STARTED)} but should be {JobStatus.NOT_STARTED}"
@@ -142,7 +143,9 @@ class QueryHandler:
             return None
         except Exception as e:
             # print with a traceback
-            logging.getLogger().error(f"Unexpected exception for job {job_id}: {e}, {traceback.format_exc()}")
+            logging.getLogger().error(
+                f"Unexpected exception for job {job_id}: {e}, {traceback.format_exc()}"
+            )
             self.job_logs_database[job_id] = JobStatus.FAILED
             return None
         finally:
@@ -267,13 +270,13 @@ def main(urls, auths, job_database: Dict[int, Dict]):
     return job_results
 
 
-def test_job(api_urls, api_auths):
+def test_job(api_urls, api_auths, amount: int):
     """
     Test job
     """
     # Updates JOB_LOGS_DATABASE with a test job
     job_database = {}
-    for i in range(10):
+    for i in range(amount):
         JOB_LOGS_DATABASE[i] = JobStatus.NOT_STARTED
         job_database[i] = {
             "num_samples": 2,
@@ -303,6 +306,7 @@ if __name__ == "__main__":
         "--job-database", default="job_database.json"
     )  # contains job_id, data
     parser.add_argument("--test-job", action="store_true")
+    parser.add_argument("--test-job-amount", type=int, default=10)
     args = parser.parse_args()
     if os.path.exists(args.job_logs_database):
         with open(args.job_logs_database, "r", encoding="utf-8") as f:
@@ -311,8 +315,8 @@ if __name__ == "__main__":
         with open(args.job_database, "r", encoding="utf-8") as f:
             jobs_database = json.load(f)
     if args.test_job:
-        test_result = test_job(args.urls, args.auths)
-        assert len(test_result) == 10, "Failed to finish test job"
+        test_result = test_job(args.urls, args.auths, args.test_job_amount)
+        assert len(test_result) == args.test_job_amount, "Failed to finish test job"
         assert all(
             v == JobStatus.FINISHED for v in JOB_LOGS_DATABASE.values()
         ), "Failed to finish test job"
