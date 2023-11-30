@@ -213,9 +213,9 @@ def main(urls, auths, job_database: Dict[int, Dict]):
         handler = QueryHandler(url, auths[_i], f"results_{timestamp}.jsonl")
         job_handlers[url] = handler
         handler.start()
-
+    iterator = iter(job_database.items())
     for handlers in job_handlers.values():
-        handlers.register_iterator(job_database.items())
+        handlers.register_iterator(iterator)
 
     pbar = tqdm.tqdm(total=len(job_database))
     try:
