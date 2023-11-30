@@ -88,7 +88,6 @@ class QueryHandler:
         # if ends with / remove it
         self.api_url = api_url.rstrip("/") + "/inference"
         self.api_auth = api_auth
-        logging.getLogger().info(f"API URL: {self.api_url}, API AUTH: {self.api_auth}")
         self.session = requests.Session()
         self.session.auth = tuple(api_auth.split(":"))
         self.queue = Queue()
@@ -275,7 +274,7 @@ def test_job(api_urls, api_auths):
     for i in range(10):
         JOB_LOGS_DATABASE[i] = JobStatus.NOT_STARTED
         job_database[i] = {
-            "num_samples": 5,
+            "num_samples": 2,
             "inference_kwargs": {
                 "temperature": 0.2,
                 "top_p": 0.95,
