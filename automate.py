@@ -120,6 +120,9 @@ class QueryHandler:
         """
         try:
             if self.job_logs_database.get(job_id) != JobStatus.NOT_STARTED:
+                logging.getLogger().error(
+                    f"Job {job_id} is already running or finished"
+                )
                 return None
             data = sanitize_data(data)
             self.job_logs_database[job_id] = JobStatus.RUNNING
@@ -130,11 +133,11 @@ class QueryHandler:
             self.job_logs_database[job_id] = JobStatus.FINISHED
             return response.json()
         except requests.exceptions.RequestException as e:
-            logging.error(f"Request exception for job {job_id}: {e}")
+            logging.getLogger().error(f"Request exception for job {job_id}: {e}")
             self.job_logs_database[job_id] = JobStatus.FAILED
             return None
         except Exception as e:
-            logging.error(f"Unexpected exception for job {job_id}: {e}")
+            logging.getLogger().error(f"Unexpected exception for job {job_id}: {e}")
             self.job_logs_database[job_id] = JobStatus.FAILED
             return None
         finally:
