@@ -202,7 +202,7 @@ class QueryHandler:
         return job_id
 
     def _from_iterator(self):
-        while True:
+        while self.stop_flag.is_set() is False:
             if self.iterator is None or self.queue.qsize() > 100:
                 time.sleep(0.1)
             try:
