@@ -123,9 +123,9 @@ class QueryHandler:
                 self.job_logs_database.get(job_id, JobStatus.NOT_STARTED) != JobStatus.NOT_STARTED
             ):
                 logging.getLogger().error(
-                    f"Job {job_id} status is {self.job_logs_database.get(job_id)} but should be {JobStatus.NOT_STARTED}"
+                    f"Job {job_id} status is {self.job_logs_database.get(job_id, JobStatus.NOT_STARTED)} but should be {JobStatus.NOT_STARTED}"
                 )
-                return No
+                return None
             data = sanitize_data(data)
             self.job_logs_database[job_id] = JobStatus.RUNNING
             response = self.session.post(self.api_url, json=data)
