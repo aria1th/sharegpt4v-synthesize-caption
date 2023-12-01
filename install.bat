@@ -20,7 +20,7 @@ if exist LLaVA (
     echo "LLaVA already installed"
     cd LLaVA
 ) else (
-    git clone https://github.com/haotian-liu/LLaVA
+    git clone https://github.com/aria1th/LLaVA -b temp-sharegpt4v-patch
     cd LLaVA
     pip install --upgrade pip
     pip install -e .
@@ -43,12 +43,12 @@ if exist sharegpt4v-synthesize-caption (
 )
 
 copy sharegpt4v-synthesize-caption\main.py main.py
-copy sharegpt4v-synthesize-caption\patch.py patch.py
+::copy sharegpt4v-synthesize-caption\patch.py patch.py
 ::patch_file('./llava/model/multimodal_encoder/builder.py', 7, '    if is_absolute_path_exists or vision_tower.startswith("openai") or vision_tower.startswith("laion") or "ShareGPT4V" in vision_tower:')
 ::patch_file('./llava/model/builder.py', 130, '    if "llava" in model_name.lower() or "sharegpt4v" in model_name.lower():\n')
 
 ::call patch.py
-python patch.py
+::python patch.py
 
 :: Execution of main.py, test with --test-api
 python main.py --port 9051 --launch-option gradio --test-api
