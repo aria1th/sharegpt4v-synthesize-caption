@@ -18,6 +18,11 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, status, APIRouter
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
+# set up process title
+try:
+    from setproctitle import setproctitle
+except ImportError:
+    setproctitle = lambda x: None # pylint: disable=unnecessary-lambda
 
 disable_torch_init()
 import torch
@@ -228,6 +233,7 @@ class ServerArguments(dict):
         "launch_option",
         "test_inference",
         "test_api",
+        "process_title"
     ]
     port: int = 8000
     api_auth_file: Optional[str] = "api_auth.json"
@@ -235,6 +241,7 @@ class ServerArguments(dict):
     launch_option: Optional[str] = "gradio"  # uvicorn, gradio(share)
     test_inference: bool = False  # test inference
     test_api: bool = False  # test api, exclusive with test_inference
+    process_title: str = ""
 
     def __init__(self, **kwargs):
         """
@@ -290,7 +297,12 @@ class ServerArguments(dict):
             action="store_true",
             help="Test api, exclusive with test-inference",
         )
-
+        parser.add_argument(
+            "--process-title",
+            type=str,
+            default="",
+            help="process title",
+        )
     @staticmethod
     def get_auth_pairs(args: "ServerArguments") -> Dict[str, str]:
         """
@@ -872,6 +884,8 @@ def main():
     server_args = ServerArguments.parse_arguments(parser)
     if args.cuda_devices:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_devices
+    if server_args.process_title:
+        setproctitle(server_args.process_title)
     model, tokenizer, _, _, _, conv = load_llava(args)
     LOADED_STATE["model"] = model
     LOADED_STATE["tokenizer"] = tokenizer
