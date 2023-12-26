@@ -3,6 +3,7 @@
 
 [google colaboratory link](https://colab.research.google.com/drive/1Dn7aW4TzzihiHyINRk6_pCrpy0vEH_mg?usp=sharing)https://colab.research.google.com/drive/1Dn7aW4TzzihiHyINRk6_pCrpy0vEH_mg?usp=sharing
 
+[Updated link](https://colab.research.google.com/drive/1ekKNzLH5fAkZQG0HU_VN35uQyswPGP7v?usp=sharing)
 You can use either API or gradio / code for inference.
 
 # Inputs
